@@ -26,8 +26,8 @@ RANSAC overview: https://www.baeldung.com/cs/ransac
 """
 
 # Parameters
-pivot_filename = "../data/tip_cals/tip_cal_07_03_24i.csv"
-output_filename = "../tools/penprobe_07_03_24i"
+pivot_filename = "../data/tip_cals/tip_cal_08_09_24c.csv"
+output_filename = "../tools/penprobe_08_09_24c"
 show_plots = True
 
 # RANSAC parameters
