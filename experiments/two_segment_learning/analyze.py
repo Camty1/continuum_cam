@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 data_size_folder = "output/data_size/"
 model_size_folder = "output/model_size/"
 data_size_pos_bins = np.arange(120) / 120 * 30
-data_size_tang_bins = np.arange(120) / 120 * 60
+data_size_tang_bins = np.arange(120) / 120 * 2 * 180 / np.pi
 
 # Figures that need to be reopened
 plt.figure(0)
@@ -76,7 +76,7 @@ for i in range(13, 16):
         tang_loss.flatten() * 180 / np.pi,
         data_size_tang_bins,
         alpha=0.3,
-        label=f"2^{i} Points, Mean: {180 / np.pi * tang_loss.mean():.3f} degrees",
+        label=f"2^{i} Points, Mean: {tang_loss.mean() * 180 / np.pi:.3f} degrees",
     )
     plt.title("Orientation Error Histogram for Different Training Data Sizes")
     plt.xlabel("Orientation Error (deg)")
@@ -148,7 +148,7 @@ for i in range(3):
         tang_loss.flatten() * 180 / np.pi,
         data_size_tang_bins,
         alpha=0.3,
-        label=f"[{size}, {size}] Hidden Neurons, Mean: {180 / np.pi * tang_loss.mean():.3f} degrees",
+        label=f"[{size}, {size}] Hidden Neurons, Mean: {tang_loss.mean() * 180 / np.pi:.3f} degrees",
     )
     plt.title("Orientation Error Histogram for Different Model Sizes")
     plt.xlabel("Orientation Error (deg)")
@@ -215,7 +215,7 @@ if best:
     plt.hist(
         tang_loss.flatten() * 180 / np.pi,
         data_size_tang_bins,
-        label=f"Mean: {180 / np.pi * tang_loss.mean():.3f} degrees",
+        label=f"Mean: {tang_loss.mean() * 180 / np.pi:.3f} degrees",
     )
     plt.title("Orientation Error Histogram for [128, 128] Model with 2^15 Datapoints")
     plt.xlabel("Orientation Error (deg)")

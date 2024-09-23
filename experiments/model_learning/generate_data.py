@@ -32,7 +32,7 @@ def generate_babble_data(
 
     for i in tqdm(range(num_measurements)):
 
-        camarillo_params = model.forward(cable_deltas[:, i], True)
+        camarillo_params = model.forward(cable_deltas[:, i])
         webster_params = camarillo_2_webster_params(
             camarillo_params, model.segment_lengths
         )

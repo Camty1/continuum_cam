@@ -1,24 +1,26 @@
-import torch
-from torch import nn
-from torch.utils.data import DataLoader
-from torch.utils.data import Dataset
-from collections import OrderedDict
-from typing import List, Tuple
-import numpy as np
-import os
-from tqdm import tqdm
-from pathlib import Path
-import shutil
+"""
+A standard neural network implementation using pytorch
+"""
 import datetime
-import utils_data
+import os
+import shutil
+from collections import OrderedDict
+from pathlib import Path
+from typing import List, Tuple
+
 import matplotlib.pyplot as plt
+import numpy as np
+import torch
+import utils_data
+from torch import nn
+from torch.utils.data import DataLoader, Dataset
 
 
-class Model(nn.Module):
+class Model(nn.Module):  # pylint: disable=too-many-instance-attributes
     """
     A simple implementation of an Artificial Neural Network (ANN).
     """
-
+    # pylint: disable-next=too-many-arguments, too-many-positional-arguments
     def __init__(
         self,
         input_dim: int,
@@ -43,7 +45,7 @@ class Model(nn.Module):
         #    else "mps" if torch.backends.mps.is_available() else "cpu"
         # )
         print(
-            f"Using {self.device} device for model (this was set intentionally due to the sizes of the matrices used.  If this needs to be changed, go to line 30 of ANN.py"
+            f"Using {self.device} device for model (this was set intentionally due to the sizes of the matrices used.  If this needs to be changed, go to line 30 of ANN.py"  # pylint: disable=line-too-long
         )
 
         self.model = nn.Sequential(
@@ -187,7 +189,7 @@ class Model(nn.Module):
                 pred = self.model(X)
                 test_loss.append(self.loss(pred, y).item())
 
-        return test_loss
+        return np.array(test_loss)
 
     def train(
         self,

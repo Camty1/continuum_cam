@@ -1,35 +1,49 @@
 #!/bin/python3
-import numpy as np
-import torch
-from torch.utils.data import random_split, DataLoader
-from ANN import Model, Dataset, PoseLoss
-from utils_data import DataContainer
+"""
+Trains and tests models of different size to determine the effect of model size on performance.
+"""
 from typing import List, Tuple
+
+import numpy as np
+from torch.utils.data import DataLoader, random_split
+
+from ANN import Dataset, Model, OrientationLoss, PoseLoss, PositionLoss
 
 
 def train(
     dataset: Dataset,
     hidden_layers: List[float],
-    iterations: int = 5,
+    iterations: int = 10,
 ) -> Tuple[List[Model], List[Tuple[float, float]]]:
+    """
+    For a given dataset and size hidden layer size, trains iterations many models
+
+    Args:
+        dataset: Training dataset
+        hidden_layers: A list containing the number of neurons per hidden layer
+        iterations: Number of models to train
+
+    Returns:
+        A list of the models, and a list containing the training and validation losses for each
+    """
 
     models = []
     losses = []
-    for i in range(iterations):
-        print(f"Size {hidden_layers} | Model {i+1}")
+    for iteration in range(iterations):
+        print(f"Size {hidden_layers} | Model {iteration+1}")
         model_string = "_".join([str(x) for x in hidden_layers])
         model = Model(
             8,
             6,
             hidden_layers,
             loss=PoseLoss(),
-            save_path=f"models/model_size/{model_string}_{i}.pt",
+            save_path=f"models/model_size/{model_string}_{iteration}.pt",
         )
-        train_dataset, validation_dataset = random_split(dataset, [0.75, 0.25])
+        train_split, validation_split = random_split(dataset, [0.75, 0.25])
 
-        train_dataloader = DataLoader(train_dataset, batch_size=64, shuffle=True)
+        train_dataloader = DataLoader(train_split, batch_size=64, shuffle=True)
         validation_dataloader = DataLoader(
-            validation_dataset, batch_size=64, shuffle=True
+            validation_split, batch_size=64, shuffle=True
         )
 
         loss = model.train(
@@ -45,22 +59,26 @@ def train(
     return models, losses
 
 
-def test(
-    cable_deltas: np.ndarray, pos: np.ndarray, tang: np.ndarray, models: List[Model]
-) -> List[Tuple[np.ndarray, np.ndarray]]:
-    cable_deltas_tensor = torch.tensor(np.transpose(cable_deltas))
+def test(dataset: Dataset, models: List[Model]) -> List[Tuple[np.ndarray, np.ndarray]]:
+    """
+    Tests the models on a given dataset
+
+    Args:
+        dataset: The test dataset
+        models: The list of models
+
+    Returns:
+        The position and orientation loss for each model
+    """
 
     test_losses = []
     for model in models:
-        model.model.eval()
-        with torch.no_grad():
-            model_output = model(cable_deltas_tensor)
 
-        model_pos = np.transpose(model_output[:, :3].numpy())
-        model_tang = np.transpose(model_output[:, 3:].numpy())
+        model.loss = PositionLoss()
+        pos_error = model.test_dataset(dataset)
 
-        pos_error = np.linalg.norm(model_pos - pos, axis=0)
-        tang_error = np.linalg.norm(model_tang - tang, axis=0)
+        model.loss = OrientationLoss()
+        tang_error = model.test_dataset(dataset)
 
         test_losses.append((pos_error, tang_error))
 
@@ -68,48 +86,71 @@ def test(
 
 
 if __name__ == "__main__":
+
+    TRAIN = False
+
     # Load data
-    test_container = DataContainer()
-    test_container.file_import("./test_data/9_2024_07_31_08_57_01.dat")
-    test_deltas, test_pos, test_tang = test_container.to_numpy()
+    test_dataset = Dataset("./test_data/9_clean_2024_09_21_10_02_14.dat")
 
-    train_dataset = Dataset("./training_data/14_2024_07_31_08_55_51.dat")
+    if TRAIN:
+        train_dataset = Dataset("./training_data/14_2024_09_21_10_01_06.dat")
 
-    # Train models
-    models_32, loss_32 = train(train_dataset, [32, 32])
-    models_64, loss_64 = train(train_dataset, [64, 64])
-    models_128, loss_128 = train(train_dataset, [128, 128])
+        # Train models
+        models_32, loss_32 = train(train_dataset, [32, 32])
+        models_64, loss_64 = train(train_dataset, [64, 64])
+        models_128, loss_128 = train(train_dataset, [128, 128])
 
-    # Extract losses
-    train_loss_32 = np.array([x[0] for x in loss_32])
-    validation_loss_32 = np.array([x[1] for x in loss_32])
+        # Extract losses
+        train_loss_32 = np.array([x[0] for x in loss_32])
+        validation_loss_32 = np.array([x[1] for x in loss_32])
 
-    train_loss_64 = np.array([x[0] for x in loss_64])
-    validation_loss_64 = np.array([x[1] for x in loss_64])
+        train_loss_64 = np.array([x[0] for x in loss_64])
+        validation_loss_64 = np.array([x[1] for x in loss_64])
 
-    train_loss_128 = np.array([x[0] for x in loss_128])
-    validation_loss_128 = np.array([x[1] for x in loss_128])
+        train_loss_128 = np.array([x[0] for x in loss_128])
+        validation_loss_128 = np.array([x[1] for x in loss_128])
 
-    # Output losses to files
-    np.savetxt("output/model_size/train_loss_32.dat", train_loss_32, delimiter=",")
-    np.savetxt(
-        "output/model_size/validation_loss_32.dat", validation_loss_32, delimiter=","
-    )
+        # Output losses to files
+        np.savetxt("output/model_size/train_loss_32.dat", train_loss_32, delimiter=",")
+        np.savetxt(
+            "output/model_size/validation_loss_32.dat",
+            validation_loss_32,
+            delimiter=",",
+        )
 
-    np.savetxt("output/model_size/train_loss_64.dat", train_loss_64, delimiter=",")
-    np.savetxt(
-        "output/model_size/validation_loss_64.dat", validation_loss_64, delimiter=","
-    )
+        np.savetxt("output/model_size/train_loss_64.dat", train_loss_64, delimiter=",")
+        np.savetxt(
+            "output/model_size/validation_loss_64.dat",
+            validation_loss_64,
+            delimiter=",",
+        )
 
-    np.savetxt("output/model_size/train_loss_128.dat", train_loss_128, delimiter=",")
-    np.savetxt(
-        "output/model_size/validation_loss_128.dat", validation_loss_128, delimiter=","
-    )
+        np.savetxt(
+            "output/model_size/train_loss_128.dat", train_loss_128, delimiter=","
+        )
+        np.savetxt(
+            "output/model_size/validation_loss_128.dat",
+            validation_loss_128,
+            delimiter=",",
+        )
+
+    else:
+        models_32, models_64, models_128 = [], [], []
+        for i in range(10):
+            loaded_model = Model(8, 6, [32, 32])
+            loaded_model.load(f"./models/model_size/32_32_{i}.pt")
+            models_32.insert(0, loaded_model)
+            loaded_model = Model(8, 6, [64, 64])
+            loaded_model.load(f"./models/model_size/64_64_{i}.pt")
+            models_64.insert(0, loaded_model)
+            loaded_model = Model(8, 6, [128, 128])
+            loaded_model.load(f"./models/model_size/128_128_{i}.pt")
+            models_128.insert(0, loaded_model)
 
     # Test models
-    test_loss_32 = test(test_deltas, test_pos, test_tang, models_32)
-    test_loss_64 = test(test_deltas, test_pos, test_tang, models_64)
-    test_loss_128 = test(test_deltas, test_pos, test_tang, models_128)
+    test_loss_32 = test(test_dataset, models_32)
+    test_loss_64 = test(test_dataset, models_64)
+    test_loss_128 = test(test_dataset, models_128)
 
     # Extract losses
     pos_loss_32 = np.concatenate([x[0].reshape((1, -1)) for x in test_loss_32], axis=0)

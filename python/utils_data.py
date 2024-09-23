@@ -1,15 +1,22 @@
-from pathlib import Path
+"""
+A module that is used to interact with continuum data
+"""
+
 import datetime
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Dict, List, Tuple
+
 import numpy as np
 import pandas as pd
-from dataclasses import dataclass, field
-from typing import Tuple, List, Dict
-import matplotlib.pyplot as plt
-from pathlib import Path
 
 
 @dataclass
-class DataContainer:
+class DataContainer:  # pylint: disable=too-many-instance-attributes
+    """
+    Used to store, import and export continuum robot data
+    """
+
     date: Tuple[int, int, int] = None
     time: Tuple[int, int, int] = None
     num_cables: int = None
@@ -19,14 +26,26 @@ class DataContainer:
     num_coils: int = 1
     prefix: str = "data"
 
-    def file_export(self, filename: str = None):
+    def file_export(self, filename: str | None = None):
+        """
+        Exports data in the container to a file
+
+        Args:
+            filename: An optional filename to save the container as
+
+        """
         if not filename:
             filename = (
                 self.prefix
-                + f"_{self.date[0]:02n}_{self.date[1]:02n}_{self.date[2]:02n}_{self.time[0]:02n}_{self.time[1]:02n}_{self.time[2]:02n}.dat"
+                + f"_{self.date[0]:02n}"
+                + f"_{self.date[1]:02n}"
+                + f"_{self.date[2]:02n}"
+                + f"_{self.time[0]:02n}"
+                + f"_{self.time[1]:02n}"
+                + f"_{self.time[2]:02n}.dat"
             )
 
-        with open(Path(filename), "w") as file:
+        with open(Path(filename), "w", encoding="UTF-8") as file:
             file.write(f"DATE: {self.date[0]}-{self.date[1]}-{self.date[2]}\n")
             file.write(f"TIME: {self.time[0]}-{self.time[1]}-{self.time[2]}\n")
             file.write(f"NUM_CABLES: {self.num_cables}\n")
@@ -35,13 +54,13 @@ class DataContainer:
             file.write("---\n")
 
             counter = 0
-            for input, output in zip(self.inputs, self.outputs):
+            for cable_input, output in zip(self.inputs, self.outputs):
                 file.write(f"{counter},")
 
-                for input_val in input:
+                for input_val in cable_input:
                     file.write(f"{input_val},")
 
-                for i in range(len(output)):
+                for i, _ in enumerate(output):
                     if i < len(output) - 1:
                         file.write(f"{output[i]},")
                     else:
@@ -50,18 +69,23 @@ class DataContainer:
                 counter += 1
 
     def file_import(self, filename: str):
-        with open(Path(filename), "r") as file:
-            date_line = file.readline()
-            date_list = date_line.split(":")
+        """
+        Reads the data from a file.
+
+        Args:
+            filename: The name of the file
+        """
+        with open(Path(filename), "r", encoding="utf-8") as file:
+            date_list = file.readline().split(":")
             assert date_list[0] == "DATE"
 
-            self.date = tuple([int(x) for x in date_list[1].split("-")])
+            self.date = tuple(int(x) for x in date_list[1].split("-"))
 
             time_line = file.readline()
             time_list = time_line.split(":")
             assert time_list[0] == "TIME"
 
-            self.time = tuple([int(x) for x in time_list[1].split("-")])
+            self.time = tuple(int(x) for x in time_list[1].split("-"))
 
             num_cables_line = file.readline()
             self.num_cables = int(num_cables_line.split(":")[1])
@@ -78,8 +102,6 @@ class DataContainer:
 
             spacer = file.readline()
             assert spacer.strip() == "---"
-
-            num_outputs = 6 * self.num_coils
 
             while line := file.readline():
                 row = line.split(",")
@@ -98,6 +120,7 @@ class DataContainer:
 
             assert len(self.inputs) == len(self.outputs) == self.num_measurements
 
+    # pylint: disable-next=too-many-positional-arguments, too-many-arguments
     def from_raw_data(
         self,
         date: Tuple[int, int, int],
@@ -109,6 +132,19 @@ class DataContainer:
         orientations: np.ndarray,
         num_coils: int = 1,
     ):
+        """
+        Populates the data container with numpy arrays
+
+        Args:
+            date: (year, month, day)
+            time: (hour, minute, second)
+            num_cables: The number of cables in the robot
+            num_measurements: The number of coils the robot has
+            cable_deltas: Used to command the robot
+            positions: Tip positions
+            orientations: Tip orientations
+            num_coils: How many aurora coils used
+        """
         assert cable_deltas.shape == (num_cables, num_measurements)
         assert positions.shape == (3 * num_coils, num_measurements)
         assert orientations.shape == (3 * num_coils, num_measurements)
@@ -122,9 +158,6 @@ class DataContainer:
         self.inputs = []
         self.outputs = []
 
-        input_size = num_cables
-        output_size = num_coils * 6
-
         for i in range(num_measurements):
             self.inputs.append(cable_deltas[:, i].flatten())
             self.outputs.append(
@@ -132,12 +165,23 @@ class DataContainer:
             )
 
     def set_date_and_time(self):
+        """
+        Get the current date and time to update the Datacontainer
+        """
         now = datetime.datetime.now()
 
         self.date = (now.year, now.month, now.day)
         self.time = (now.hour, now.minute, now.second)
 
     def to_numpy(self):
+        """
+        Takes the data in the Datacontainer and outputs them as numpy arrays
+
+        Returns:
+            cable_deltas: The cable inputs
+            pos: The tip positions
+            tang: The tip orientations
+        """
         cable_deltas = np.concatenate([x.reshape((-1, 1)) for x in self.inputs], axis=1)
 
         pos = np.concatenate([x[:3].reshape((-1, 1)) for x in self.outputs], axis=1)
@@ -146,6 +190,14 @@ class DataContainer:
         return cable_deltas, pos, tang
 
     def clean(self, pos_threshold=128, tang_threshold=np.pi):
+        """
+        Removes all NaNs and invalid measurements from the data_container.
+        Should not be used on multi_input_learning datasets.
+
+        Args:
+            pos_threshold: The distance from the origin for an invalid measurement
+            tang_threshold: The rotation angle from the origin for an invalid measurement
+        """
         bad_indices = []
         for i in range(self.num_measurements):
             has_nan = np.isnan(self.inputs[i]).any() or np.isnan(self.outputs[i]).any()
@@ -163,6 +215,13 @@ class DataContainer:
 def parse_aurora_csv(
     filename: str,
 ) -> Dict[str, List[Tuple[np.ndarray, np.ndarray, float]]]:
+    """
+    Parses aurora data into a dictionary containing the quaternions, positions, and
+    rms errors for each probe.
+
+    Args:
+        filename: The file to parse
+    """
 
     df = pd.read_csv(Path(filename), header=None)
 

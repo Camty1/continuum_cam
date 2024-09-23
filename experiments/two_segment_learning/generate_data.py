@@ -69,7 +69,38 @@ if __name__ == "__main__":
         additional_cable_length,
     )
 
-    generate_data(model, 2**13, prefix="training_data/13")
-    generate_data(model, 2**14, prefix="training_data/14")
-    generate_data(model, 2**15, prefix="training_data/15")
-    generate_data(model, 2**9, 0, 0, "test_data/9")
+    generate_data(
+        model=model,
+        num_points=2**13,
+        pos_noise=0.5,
+        tang_noise=0.05,
+        prefix="training_data/13",
+    )
+    generate_data(
+        model=model,
+        num_points=2**14,
+        pos_noise=0,
+        tang_noise=0,
+        prefix="training_data/14_clean",
+    )
+    generate_data(
+        model=model,
+        num_points=2**14,
+        pos_noise=0.5,
+        tang_noise=0.05,
+        prefix="training_data/14",
+    )
+    generate_data(
+        model=model,
+        num_points=2**15,
+        pos_noise=0.5,
+        tang_noise=0.05,
+        prefix="training_data/15",
+    )
+    generate_data(
+        model=model,
+        num_points=2**9,
+        pos_noise=0,
+        tang_noise=0,
+        prefix="./test_data/9_clean",
+    )

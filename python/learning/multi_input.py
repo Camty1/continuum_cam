@@ -1,19 +1,20 @@
+import datetime
+import os
+from collections import OrderedDict
+from pathlib import Path
+from typing import List, Tuple
+
+import matplotlib.pyplot as plt
+import numpy as np
 import torch
+import utils_data
 from torch import nn
 from torch.utils.data import DataLoader
-from torch.utils.data import Dataset
-from collections import OrderedDict
-from typing import List, Tuple
-import numpy as np
-import os
-from pathlib import Path
-import datetime
-import utils_data
-import matplotlib.pyplot as plt
-import ANN
+
+from ANN import Dataset, Model
 
 
-class MultiInputModel(ANN.Model):
+class MultiInputModel(Model):
 
     def __init__(
         self,
@@ -45,7 +46,7 @@ class MultiInputModel(ANN.Model):
         )
 
 
-class MultiInputDataset(ANN.Dataset):
+class MultiInputDataset(Dataset):
 
     def __init__(self, num_previous_inputs: int, filename: str = None):
         self.num_previous_inputs = num_previous_inputs
