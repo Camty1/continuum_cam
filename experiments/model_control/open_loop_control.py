@@ -15,11 +15,11 @@ from continuum_aurora import ContinuumAurora
 T_aurora_2_model = np.loadtxt("../../tools/T_aurora_2_model", delimiter=",")
 T_tip_2_coil = np.loadtxt("../../tools/T_tip_2_coil", delimiter=",")
 
-wait_time = 1
+wait_time = 0
 repetitions = 1
 ns2s = 10 ** (-9)
-trajectory = np.loadtxt("output/nathan_trajectory.dat", delimiter=",")
-cable_trajectory = np.loadtxt("output/nathan_cable_trajectory.dat", delimiter=",")
+trajectory = np.loadtxt("output/nathan_trajectory_v3.dat", delimiter=",")
+cable_trajectory = np.loadtxt("output/nathan_cable_trajectory_v3.dat", delimiter=",")
 num_points = cable_trajectory.shape[1]
 
 aurora = ContinuumAurora(T_aurora_2_model, T_tip_2_coil)
@@ -72,4 +72,5 @@ plt.xlabel("x (mm)")
 plt.ylabel("y (mm)")
 ax.set_zlabel("z (mm)")
 plt.legend()
+ax.view_init(90, -90, 0)
 plt.show()

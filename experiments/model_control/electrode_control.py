@@ -13,7 +13,7 @@ import utils_cc
 import utils_data
 
 trajectory = np.loadtxt(
-    Path("output/nathan_trajectory_v2.dat"), delimiter=",", dtype=np.float64
+    Path("output/nathan_trajectory_v3.dat"), delimiter=",", dtype=np.float64
 )
 trajectory_tensor = torch.tensor(trajectory)
 num_points = trajectory.shape[1]
@@ -121,4 +121,4 @@ for i in range(num_points):
     )
     open_loop_dls[:, i] = result["x"]
 
-np.savetxt("output/nathan_cable_trajectory.dat", open_loop_dls, delimiter=",")
+np.savetxt("output/nathan_cable_trajectory_v3.dat", open_loop_dls, delimiter=",")

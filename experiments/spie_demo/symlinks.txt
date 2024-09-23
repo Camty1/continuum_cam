@@ -1,1 +1,3 @@
 continuum_arduino.py
+continuum_aurora.py
+kinematics.py
